@@ -1,19 +1,21 @@
-server:
-  port: 8888
-
+# Configuration pour Config Server (surcharge application.yml)
 spring:
   application:
     name: config-server
-
+  profiles:
+    active: git
   cloud:
     config:
       server:
         git:
-          uri: https://github.com/AIMEROU-DIA/Configurations-teranga-biz
+          uri: https://github.com/AIMEROU-DIA/configurations-teranga-biz.git
           default-label: main
           clone-on-start: true
+          force-pull: true
+          skip-ssl-validation: false
+          timeout: 10
+          order: 1
 
-eureka:
-  client:
-    register-with-eureka: true
-    fetch-registry: true
+server:
+  port: 8888
+
