@@ -2,7 +2,7 @@
 # À placer dans le dépôt GitHub : configurations-teranga-biz/api-gateway.yml
 
 server:
-  port: 9197
+  port: 8080
 
 spring:
   application:
@@ -24,8 +24,6 @@ spring:
             allowed-origins: 
               - "http://localhost:3000"
               - "http://localhost:4200"
-              - "https://teranga-biz.com"
-              - "https://www.teranga-biz.com"
             allowed-methods:
               - GET
               - POST
@@ -33,18 +31,9 @@ spring:
               - DELETE
               - PATCH
               - OPTIONS
-            allowed-headers: 
-              - Authorization
-              - Content-Type
-              - Accept
-              - X-Requested-With
-              - X-User-Id
-              - X-Correlation-Id
+            allowed-headers: "*"
             exposed-headers:
               - Authorization
-              - X-Total-Count
-              - X-Page-Number
-              - X-Page-Size
             allow-credentials: true
             max-age: 3600
       
@@ -89,8 +78,8 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${JWT_ISSUER_URI:http://utilisateurs-service/auth}
-          jwk-set-uri: ${JWT_JWK_SET_URI:http://utilisateurs-service/auth/.well-known/jwks.json}
+          issuer-uri: ${JWT_ISSUER_URI:http://user-service/api/v1/auth}
+          jwk-set-uri: ${JWT_JWK_SET_URI:http://user-service/api/v1/auth/.well-known/jwks.json}
 
 # Configuration Eureka Client
 eureka:
@@ -101,19 +90,19 @@ eureka:
     register-with-eureka: true
   instance:
     prefer-ip-address: true
-    instance-id: ${spring.application.name}:${server.port}  # ✅ CHANGÉ
-    hostname: ${HOSTNAME:localhost}
-    non-secure-port: ${server.port:9197}
+    instance-id: ${spring.application.name}:${server.port}
+    hostname: ${HOSTNAME:api-gateway}
+    non-secure-port: ${server.port:8080}
     lease-renewal-interval-in-seconds: 10
     lease-expiration-duration-in-seconds: 30
 
 
-# Configuration JWT
+# Configuration JWT (Même secret que user-service)
 jwt:
-  secret: ${JWT_SECRET:terangabiz-super-secret-key-for-jwt-signing-minimum-256-bits-required-for-hs256-algorithm}
-  expiration: ${JWT_EXPIRATION:86400000} # 24 heures par défaut
+  secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+  expiration: ${JWT_EXPIRATION:86400000}
 
-# Configuration Resilience4j (Circuit Breaker)
+# Configuration Resilience4j
 resilience4j:
   circuitbreaker:
     configs:
@@ -129,71 +118,14 @@ resilience4j:
           - java.util.concurrent.TimeoutException
           - org.springframework.web.client.HttpServerErrorException
     instances:
-      # MS-01 : Utilisateurs & Authentification
-      utilisateurs-circuit-breaker:
+      user-service-circuit-breaker:
         base-config: default
-      
-      # MS-02 : Produits & Catalogue
       produits-circuit-breaker:
         base-config: default
-      
-      # MS-03 : Boutiques
       boutiques-circuit-breaker:
         base-config: default
+      # ... autres microservices à ajouter selon besoin ...
       
-      # MS-04 : Inventaire
-      inventaire-circuit-breaker:
-        base-config: default
-      
-      # MS-05 : Commandes
-      commandes-circuit-breaker:
-        base-config: default
-      
-      # MS-06 : Paiements (configuration plus stricte)
-      paiements-circuit-breaker:
-        slidingWindowSize: 15
-        failureRateThreshold: 30
-        waitDurationInOpenState: 20000
-        minimumNumberOfCalls: 10
-      
-      # MS-07 : Social
-      social-circuit-breaker:
-        base-config: default
-      
-      # MS-08 : Messagerie
-      messagerie-circuit-breaker:
-        base-config: default
-      
-      # MS-09 : Académie
-      academie-circuit-breaker:
-        base-config: default
-      
-      # MS-10 : Partenaires
-      partenaires-circuit-breaker:
-        base-config: default
-      
-      # MS-11 : Publicité
-      publicite-circuit-breaker:
-        base-config: default
-      
-      # MS-12 : Avis & Évaluations
-      avis-circuit-breaker:
-        base-config: default
-      
-      # MS-13 : Certification & Gamification
-      certification-circuit-breaker:
-        base-config: default
-      
-      # MS-14 : Intelligence Artificielle
-      ia-circuit-breaker:
-        slidingWindowSize: 20
-        failureRateThreshold: 60
-        waitDurationInOpenState: 15000
-      
-      # MS-15 : Statistiques & Analyses
-      statistiques-circuit-breaker:
-        base-config: default
-
   # Configuration des timeouts
   timelimiter:
     configs:
@@ -201,49 +133,23 @@ resilience4j:
         timeoutDuration: 5s
         cancelRunningFuture: true
     instances:
-      utilisateurs-circuit-breaker:
+      user-service-circuit-breaker:
         timeoutDuration: 3s
       produits-circuit-breaker:
         timeoutDuration: 5s
       boutiques-circuit-breaker:
         timeoutDuration: 5s
-      inventaire-circuit-breaker:
-        timeoutDuration: 3s
-      commandes-circuit-breaker:
-        timeoutDuration: 7s
-      paiements-circuit-breaker:
-        timeoutDuration: 15s # Plus de temps pour les paiements
-      social-circuit-breaker:
-        timeoutDuration: 5s
-      messagerie-circuit-breaker:
-        timeoutDuration: 4s
-      academie-circuit-breaker:
-        timeoutDuration: 8s
-      partenaires-circuit-breaker:
-        timeoutDuration: 5s
-      publicite-circuit-breaker:
-        timeoutDuration: 4s
-      avis-circuit-breaker:
-        timeoutDuration: 5s
-      certification-circuit-breaker:
-        timeoutDuration: 5s
-      ia-circuit-breaker:
-        timeoutDuration: 20s # Plus de temps pour l'IA
-      statistiques-circuit-breaker:
-        timeoutDuration: 10s
 
-# Configuration Actuator (Monitoring)
+# Configuration Actuator
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus,gateway,env,loggers
+        include: health,info,metrics,prometheus,gateway
       base-path: /actuator
   endpoint:
     health:
       show-details: always
-      probes:
-        enabled: true
     gateway:
       enabled: true
   health:
@@ -262,28 +168,9 @@ management:
       application: ${spring.application.name}
       environment: ${ENVIRONMENT:production}
 
-# Configuration des logs
+# Logs
 logging:
   level:
     root: INFO
-    com.platform.gateway: DEBUG
     org.springframework.cloud.gateway: INFO
     org.springframework.security: INFO
-    org.springframework.web: WARN
-    io.github.resilience4j: INFO
-  pattern:
-    console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:%wEx}"
-    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
-  file:
-    name: /var/log/api-gateway/api-gateway.log
-    max-size: 50MB
-    max-history: 30
-    total-size-cap: 1GB
-
-# Informations de l'application
-info:
-  app:
-    name: ${spring.application.name}
-    description: API Gateway - Point d'entrée unique pour tous les microservices Teranga Biz
-    version: 1.0.0
-    author: Teranga Biz Platform Team
