@@ -26,15 +26,18 @@ spring:
   # Configuration JPA
   jpa:
     hibernate:
-      ddl-auto: ${DDL_AUTO:update}
-    show-sql: ${SHOW_SQL:false}
+      ddl-auto: ${DDL_AUTO:validate}
+    show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
-        use_sql_comments: true
+        format_sql: false
+        use_sql_comments: false
         jdbc:
           batch_size: 20
+          time_zone: UTC
+        order_inserts: true
+        order_updates: true
     open-in-view: false
   
   # Configuration Data JPA
@@ -100,18 +103,18 @@ management:
 logging:
   level:
     root: INFO
-    teranga.biz: DEBUG
-    org.springframework.security: INFO
+    teranga.biz: INFO
+    org.springframework.security: WARN
     org.springframework.web: WARN
-    org.hibernate.SQL: ${SQL_LOG_LEVEL:INFO}
-    org.hibernate.type.descriptor.sql.BasicBinder: ${SQL_LOG_LEVEL:INFO}
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
   pattern:
     console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:%wEx}"
   file:
-    name: /var/log/user-service/user-service.log
-    max-size: 50MB
+    name: ${LOG_FILE_PATH:/var/log/user-service/user-service.log}
+    max-size: 100MB
     max-history: 30
-    total-size-cap: 1GB
+    total-size-cap: 3GB
 
 # Informations de l'application
 info:
